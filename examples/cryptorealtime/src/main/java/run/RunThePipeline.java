@@ -70,11 +70,11 @@ public class RunThePipeline {
         @ProcessElement
         public void processElement(DoFn<TradeLoad, Mutation>.ProcessContext c) throws Exception {
             TradeLoad tl = c.element();
-            Trade t = tl.getTrade();
+            //Trade t = tl.getTrade();
 
-            String rowkey =   t.getCurrencyPair().toString()+"#"+tl.getExchange()+"#"+System.currentTimeMillis()+"#"+System.nanoTime();
+            String rowkey =   tl.getCurrencyPair()+"#"+tl.getExchange()+"#"+System.currentTimeMillis()+"#"+System.nanoTime();
 
-            long delta =  System.currentTimeMillis() - t.getTimestamp().getTime();
+            //long delta =  System.currentTimeMillis() - tl.getTimestampDelta().getTime();
 
             /**
              * Adds the given element to the main output PCollection, with the given timestamp.
@@ -90,12 +90,12 @@ public class RunThePipeline {
              */
             c.outputWithTimestamp(
                     new Put(Bytes.toBytes(rowkey))
-                            .addColumn(FAMILY, Bytes.toBytes("volume"), Bytes.toBytes(t.getOriginalAmount().toString()))
-                            .addColumn(FAMILY, Bytes.toBytes("price"), Bytes.toBytes(t.getPrice().toString()))
-                            .addColumn(FAMILY, Bytes.toBytes("orderType"), Bytes.toBytes(t.getType().toString()))
+                            .addColumn(FAMILY, Bytes.toBytes("volume"), Bytes.toBytes(tl.getVolume().toString()))
+                            .addColumn(FAMILY, Bytes.toBytes("price"), Bytes.toBytes(tl.getPrice().toString()))
+                            .addColumn(FAMILY, Bytes.toBytes("orderType"), Bytes.toBytes(tl.getType()))
                             .addColumn(FAMILY, Bytes.toBytes("market"), Bytes.toBytes(tl.getExchange()))
-                            .addColumn(FAMILY, Bytes.toBytes("delta"), Bytes.toBytes( Long.toString(delta)))
-                            .addColumn(FAMILY, Bytes.toBytes("exchangeTime"), Bytes.toBytes( Long.toString(t.getTimestamp().getTime()))),
+                            .addColumn(FAMILY, Bytes.toBytes("delta"), Bytes.toBytes( Long.toString(tl.getTimestampDelta())))
+                            .addColumn(FAMILY, Bytes.toBytes("exchangeTime"), Bytes.toBytes( Long.toString(tl.getTimestampExchange().getTime()))),
                     Instant.now()
             );
         }
@@ -135,7 +135,7 @@ public class RunThePipeline {
         /* how to add additional custom pairs?
         bitFinexPair.add(new CurrencyPair("XTZ", "BTC"));*/
         allExchanges.add(new ExchangeConfiguration(BitfinexStreamingExchange.class.getName(),"bitfinex", bitFinexPair));
-	/*
+
         // BITSTAMP
         ArrayList<CurrencyPair> bitStampPair = new  ArrayList<CurrencyPair>();
         bitStampPair.add(CurrencyPair.BTC_USD);
@@ -169,7 +169,7 @@ public class RunThePipeline {
         HitBTCPair.add(CurrencyPair.BTC_USD);
         HitBTCPair.add(CurrencyPair.ETH_USD);
         allExchanges.add(new ExchangeConfiguration(HitbtcStreamingExchange.class.getName(),"hitBTC", HitBTCPair));
-	*/
+
         // Dispatcher
         // 1) iterate all exchanges
         for (ExchangeConfiguration exConf : allExchanges) {
